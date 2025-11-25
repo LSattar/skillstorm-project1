@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: shelfsync
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shelfsync
+    username: postgres
+    password: password
+
