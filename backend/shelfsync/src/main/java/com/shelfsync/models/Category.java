@@ -21,6 +21,11 @@ public class Category {
 		this.categoryId = categoryId;
 		this.categoryName = categoryName;
 	}
+	
+	public Category(String categoryName) {
+		super();
+		this.categoryName = categoryName;
+	}
 
 	public int getCategoryId() {
 		return categoryId;
