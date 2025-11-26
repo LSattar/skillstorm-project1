@@ -2,6 +2,9 @@ package com.shelfsync.controllers;
 
 import com.shelfsync.dtos.CategoryDto;
 import com.shelfsync.services.CategoryService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +22,7 @@ public class CategoryController {
 
 	// CREATE
 	@PostMapping
-	public ResponseEntity<CategoryDto> create(@RequestBody CategoryDto dto) {
+	public ResponseEntity<CategoryDto> create(@Valid @RequestBody CategoryDto dto) {
 		CategoryDto created = service.create(dto);
 		return ResponseEntity.ok(created);
 	}

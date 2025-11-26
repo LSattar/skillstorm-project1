@@ -1,5 +1,7 @@
 package com.shelfsync.dtos;
 
-public record CategoryDto(Integer categoryId, String categoryName) {
+import jakarta.validation.constraints.NotBlank;
+
+public record CategoryDto(Integer categoryId, @NotBlank(message= "category name is required")String categoryName) {
 
 }
