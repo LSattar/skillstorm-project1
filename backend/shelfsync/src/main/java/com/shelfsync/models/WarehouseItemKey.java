@@ -1,4 +1,4 @@
-package com.skillstorm.models;
+package com.shelfsync.models;
 
 import jakarta.persistence.*;
 import java.io.Serializable;
