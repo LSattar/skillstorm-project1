@@ -11,56 +11,53 @@ import com.shelfsync.repositories.CategoryRepository;
 
 @Service
 public class CategoryService {
-	
-    private final CategoryRepository repo;
 
-    public CategoryService(CategoryRepository repo) {
-        this.repo = repo;
-    }
+	private final CategoryRepository repo;
 
-    private CategoryDto toDto(Category category) {
-        return new CategoryDto(category.getCategoryId(), category.getCategoryName());
-    }
+	public CategoryService(CategoryRepository repo) {
+		this.repo = repo;
+	}
 
-    // CREATE
-    public CategoryDto create(CategoryDto dto) {
-        Category category = new Category();
-        category.setCategoryName(dto.categoryName());
+	private CategoryDto toDto(Category category) {
+		return new CategoryDto(category.getCategoryId(), category.getCategoryName());
+	}
 
-        Category saved = repo.save(category);
-        return toDto(saved);
-    }
-	
-    // READ ALL
-    public List<CategoryDto> findAllCategories() {
-        return repo.findAll().stream()
-                .map(this::toDto)
-                .toList();
-    }
-	
-    // READ ONE
-    public CategoryDto findById(Integer id) {
-        Category category = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+	// CREATE
+	public CategoryDto create(CategoryDto dto) {
+		Category category = new Category();
+		category.setCategoryName(dto.categoryName());
 
-        return toDto(category);
-    }
-	
-    // UPDATE
-    public CategoryDto update(Integer id, CategoryDto dto) {
-        Category existing = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+		Category saved = repo.save(category);
+		return toDto(saved);
+	}
 
-        existing.setCategoryName(dto.categoryName());
+	// READ ALL
+	public List<CategoryDto> findAllCategories() {
+		return repo.findAll().stream().map(this::toDto).toList();
+	}
 
-        Category saved = repo.save(existing);
-        return toDto(saved);
-    }
-	
-    // DELETE
-    public void deleteById(Integer id) {
-        Category existing = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
-        repo.delete(existing);
-    }
+	// READ ONE
+	public CategoryDto findById(Integer id) {
+		Category category = repo.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+		return toDto(category);
+	}
+
+	// UPDATE
+	public CategoryDto update(Integer id, CategoryDto dto) {
+		Category existing = repo.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+
+		existing.setCategoryName(dto.categoryName());
+
+		Category saved = repo.save(existing);
+		return toDto(saved);
+	}
+
+	// DELETE
+	public void deleteById(Integer id) {
+		Category existing = repo.findById(id)
+				.orElseThrow(() -> new ResourceNotFoundException("Category not found: " + id));
+		repo.delete(existing);
+	}
 }
