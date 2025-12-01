@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.shelfsync.dtos.ItemDto;
+import com.shelfsync.dtos.ItemResponseDto;
 import com.shelfsync.exceptions.ResourceConflictException;
 import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Category;
@@ -39,6 +40,18 @@ public class ItemService {
         this.companyRepo = companyRepo;
         this.warehouseItemRepo = warehouseItemRepo;
         this.inventoryHistoryRepo = inventoryHistoryRepo;
+    }
+    
+    private ItemResponseDto toResponseDto(Item item) {
+        return new ItemResponseDto(
+                item.getItemId(),
+                item.getSku(),
+                item.getGameTitle(),
+                item.getCategory(),   
+                item.getCompany(),    
+                item.getWeightLbs(),
+                item.getCubicFeet()
+        );
     }
 
     private ItemDto toDto(Item item) {
@@ -77,8 +90,8 @@ public class ItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found: " + companyId));
     }
 
-    // CREATE
-    public ItemDto create(ItemDto dto) {
+ // CREATE
+    public ItemResponseDto create(ItemDto dto) {
         log.debug("Request to create Item with sku='{}', title='{}'",
                 dto.sku(), dto.gameTitle());
 
@@ -102,19 +115,21 @@ public class ItemService {
         log.info("Created Item id={} sku='{}' title='{}'",
                 saved.getItemId(), saved.getSku(), saved.getGameTitle());
 
-        return toDto(saved);
+        return toResponseDto(saved);
     }
 
     // READ ALL
-    public List<ItemDto> findAllItems() {
+    public List<ItemResponseDto> findAllItems() {
         log.debug("Fetching all Items");
         List<Item> items = repo.findAll();
         log.info("Fetched {} Items", items.size());
-        return items.stream().map(this::toDto).toList();
+        return items.stream()
+                .map(this::toResponseDto)
+                .toList();
     }
 
     // READ ONE
-    public ItemDto findById(Integer id) {
+    public ItemResponseDto findById(Integer id) {
         log.debug("Fetching Item by id={}", id);
         Item item = repo.findById(id)
                 .orElseThrow(() -> {
@@ -124,11 +139,11 @@ public class ItemService {
 
         log.info("Found Item id={} sku='{}' title='{}'",
                 item.getItemId(), item.getSku(), item.getGameTitle());
-        return toDto(item);
+        return toResponseDto(item);
     }
 
     // UPDATE
-    public ItemDto update(Integer id, ItemDto dto) {
+    public ItemResponseDto update(Integer id, ItemDto dto) {
         log.debug("Updating Item id={} with sku='{}', title='{}'",
                 id, dto.sku(), dto.gameTitle());
 
@@ -159,8 +174,9 @@ public class ItemService {
         Item saved = repo.save(existing);
         log.info("Updated Item id={} sku='{}' title='{}'",
                 saved.getItemId(), saved.getSku(), saved.getGameTitle());
-        return toDto(saved);
+        return toResponseDto(saved);
     }
+
 
     // DELETE
     public void deleteById(Integer id) {

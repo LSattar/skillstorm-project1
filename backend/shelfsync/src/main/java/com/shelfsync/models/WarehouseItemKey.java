@@ -34,4 +34,20 @@ public class WarehouseItemKey implements Serializable {
         return Objects.hash(warehouseId, itemId);
     }
 
+	public int getWarehouseId() {
+		return warehouseId;
+	}
+
+	public void setWarehouseId(int warehouseId) {
+		this.warehouseId = warehouseId;
+	}
+
+	public int getItemId() {
+		return itemId;
+	}
+
+	public void setItemId(int itemId) {
+		this.itemId = itemId;
+	}
+
 }
