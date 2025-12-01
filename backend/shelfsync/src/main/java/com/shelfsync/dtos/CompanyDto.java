@@ -1,4 +1,6 @@
 package com.shelfsync.dtos;
 
-public record CompanyDto(Integer id, String name, String phone, String email, String contactPerson) {
+import jakarta.validation.constraints.NotBlank;
+
+public record CompanyDto(Integer id, @NotBlank(message= "company name is required")String name, String phone, String email, String contactPerson) {
 }
