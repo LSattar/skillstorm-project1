@@ -10,4 +10,7 @@ public interface WarehouseItemRepository extends JpaRepository <WarehouseItem, W
 	// FK check for warehouse
 	boolean existsByWarehouse_WarehouseId(Integer warehouseId);
 	
+	// FK check for items
+	boolean existsByItem_ItemId(Integer itemId);
+	
 }

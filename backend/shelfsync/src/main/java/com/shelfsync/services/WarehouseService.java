@@ -14,7 +14,6 @@ import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Employee;
 import com.shelfsync.models.Warehouse;
 import com.shelfsync.repositories.EmployeeRepository;
-import com.shelfsync.repositories.LocationRepository;
 import com.shelfsync.repositories.WarehouseItemRepository;
 import com.shelfsync.repositories.WarehouseRepository;
 
@@ -25,16 +24,13 @@ public class WarehouseService {
 
     private final WarehouseRepository repo;
     private final EmployeeRepository employeeRepo;
-    private final LocationRepository locationRepo;
     private final WarehouseItemRepository warehouseItemRepo;
 
     public WarehouseService(WarehouseRepository repo,
                             EmployeeRepository employeeRepo,
-                            LocationRepository locationRepo,
                             WarehouseItemRepository warehouseItemRepo) {
         this.repo = repo;
         this.employeeRepo = employeeRepo;
-        this.locationRepo = locationRepo;
         this.warehouseItemRepo = warehouseItemRepo;
     }
 
@@ -140,17 +136,16 @@ public class WarehouseService {
                     return new ResourceNotFoundException("Warehouse not found: " + id);
                 });
 
-        boolean hasLocations = locationRepo.existsByWarehouse_WarehouseId(id);
         boolean hasItems = warehouseItemRepo.existsByWarehouse_WarehouseId(id);
         boolean hasEmployees = employeeRepo.existsByAssignedWarehouse_WarehouseId(id);
 
-        if (hasLocations || hasItems || hasEmployees) {
+        if (hasItems || hasEmployees) {
             log.warn(
-                "Cannot delete Warehouse id={} because it is referenced by locations={}, items={}, employees={}",
-                id, hasLocations, hasItems, hasEmployees
+                "Cannot delete Warehouse id={} because it is referenced by items={}, employees={}",
+                id,  hasItems, hasEmployees
             );
             throw new ResourceConflictException(
-                "Warehouse is in use by existing locations, items, or employees and cannot be deleted"
+                "Warehouse is in use by existing items, or employees and cannot be deleted"
             );
         }
 
