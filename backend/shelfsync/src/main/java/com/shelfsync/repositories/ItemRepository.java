@@ -12,5 +12,7 @@ public interface ItemRepository extends JpaRepository<Item, Integer>{
     
     // Used for FK check in company
     boolean existsByCompany_CompanyId(Integer companyId);
+
+	boolean existsBySku(String sku);
 	
 }
