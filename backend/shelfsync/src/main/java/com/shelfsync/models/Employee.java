@@ -2,6 +2,8 @@ package com.shelfsync.models;
 
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -12,6 +14,7 @@ public class Employee {
 	@Column(name = "employee_id", columnDefinition = "UUID")
 	private UUID employeeId;
 
+	@JsonIgnore
 	@Column(name = "password_hash", nullable = false)
 	private String passwordHash;
 

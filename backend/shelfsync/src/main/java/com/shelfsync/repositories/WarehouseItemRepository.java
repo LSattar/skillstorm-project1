@@ -7,4 +7,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface WarehouseItemRepository extends JpaRepository <WarehouseItem, WarehouseItemKey> {
 
+	// FK check for warehouse
+	boolean existsByWarehouse_WarehouseId(Integer warehouseId);
+	
 }
