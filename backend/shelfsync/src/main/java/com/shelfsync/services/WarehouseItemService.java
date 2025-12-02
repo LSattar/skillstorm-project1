@@ -1,11 +1,16 @@
 package com.shelfsync.services;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.shelfsync.dtos.ItemInventorySummaryResponse;
+import com.shelfsync.dtos.ItemWarehouseQuantity;
 import com.shelfsync.dtos.WarehouseItemDto;
 import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Item;
@@ -171,6 +176,49 @@ public class WarehouseItemService {
                 entity.getQuantity());
 
         return toResponse(entity);
+    }
+    
+    public java.util.List<ItemInventorySummaryResponse> searchInventoryByItem(String q) {
+        if (q == null || q.trim().isEmpty()) {
+            throw new IllegalArgumentException("Search query q is required");
+        }
+
+        String trimmed = q.trim();
+
+        List<WarehouseItem> results = repo.searchInventoryByItem(trimmed);
+
+        // group by Item
+        Map<Item, List<WarehouseItem>> byItem = results.stream()
+                .collect(Collectors.groupingBy(WarehouseItem::getItem));
+
+        return byItem.entrySet().stream()
+                .map(entry -> {
+                    Item item = entry.getKey();
+                    List<WarehouseItem> wis = entry.getValue();
+
+                    int total = wis.stream()
+                            .map(WarehouseItem::getQuantity)
+                            .filter(Objects::nonNull)
+                            .mapToInt(Integer::intValue)
+                            .sum();
+
+                    List<ItemWarehouseQuantity> locations = wis.stream()
+                            .map(wi -> new ItemWarehouseQuantity(
+                                    wi.getWarehouse().getWarehouseId(),
+                                    wi.getWarehouse().getName(),
+                                    wi.getQuantity()
+                            ))
+                            .toList();
+
+                    return new ItemInventorySummaryResponse(
+                            item.getItemId(),
+                            item.getSku(),
+                            item.getGameTitle(),
+                            total,
+                            locations
+                    );
+                })
+                .toList();
     }
 
     // UPDATE (quantity)
