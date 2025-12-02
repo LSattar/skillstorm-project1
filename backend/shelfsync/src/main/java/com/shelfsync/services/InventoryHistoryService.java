@@ -1,5 +1,6 @@
 package com.shelfsync.services;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -166,6 +167,38 @@ public class InventoryHistoryService {
 				history.getItem() != null ? history.getItem().getItemId() : null, history.getQuantityChange());
 
 		return toDto(history);
+	}
+	
+	@Transactional
+	public List<InventoryHistoryDto> findByWarehouseAndDateRange(
+	        Integer warehouseId,
+	        OffsetDateTime start,
+	        OffsetDateTime end
+	) {
+	    if (warehouseId == null) {
+	        throw new IllegalArgumentException("warehouseId is required");
+	    }
+
+	    log.debug("Fetching InventoryHistory for warehouseId={} between {} and {}",
+	            warehouseId, start, end);
+
+	    List<InventoryHistory> records =
+	            repo.findByWarehouseAndDateRange(warehouseId, start, end);
+
+	    return records.stream()
+	            .map(this::toDto)
+	            .toList();
+	}
+	
+	@Transactional
+	public List<InventoryHistoryDto> findRecentActivities() {
+	    log.debug("Fetching top 10 most recent inventory history records");
+
+	    List<InventoryHistory> records = repo.findTop10ByOrderByOccurredAtDesc();
+
+	    return records.stream()
+	            .map(this::toDto)
+	            .toList();
 	}
 
 	// UPDATE
