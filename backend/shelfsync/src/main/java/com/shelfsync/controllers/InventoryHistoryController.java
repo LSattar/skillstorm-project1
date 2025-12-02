@@ -4,9 +4,12 @@ import com.shelfsync.dtos.InventoryHistoryDto;
 import com.shelfsync.services.InventoryHistoryService;
 
 import jakarta.validation.Valid;
+
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @RestController
@@ -37,6 +40,27 @@ public class InventoryHistoryController {
     @GetMapping
     public ResponseEntity<List<InventoryHistoryDto>> getAll() {
         List<InventoryHistoryDto> history = service.findAll();
+        return ResponseEntity.ok(history);
+    }
+    
+    @GetMapping("/warehouse/{warehouseId}")
+    public ResponseEntity<List<InventoryHistoryDto>> getHistoryForWarehouse(
+            @PathVariable Integer warehouseId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            OffsetDateTime start,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            OffsetDateTime end
+    ) {
+        List<InventoryHistoryDto> history =
+                service.findByWarehouseAndDateRange(warehouseId, start, end);
+        return ResponseEntity.ok(history);
+    }
+    
+    @GetMapping("/recent")
+    public ResponseEntity<List<InventoryHistoryDto>> getRecentActivities() {
+        List<InventoryHistoryDto> history = service.findRecentActivities();
         return ResponseEntity.ok(history);
     }
 
