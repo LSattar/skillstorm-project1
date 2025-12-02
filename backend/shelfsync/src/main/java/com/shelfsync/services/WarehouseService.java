@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.shelfsync.dtos.WarehouseDto;
+import com.shelfsync.dtos.WarehouseResponseDto;
 import com.shelfsync.exceptions.ResourceConflictException;
 import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Employee;
@@ -50,6 +51,19 @@ public class WarehouseService {
                 warehouse.getMaximumCapacityCubicFeet()
         );
     }
+    
+    private WarehouseResponseDto toResponseDto(Warehouse warehouse) {
+        return new WarehouseResponseDto(
+                warehouse.getWarehouseId(),
+                warehouse.getName(),
+                warehouse.getAddress(),
+                warehouse.getCity(),
+                warehouse.getState(),
+                warehouse.getZip(),
+                warehouse.getManager(),                 
+                warehouse.getMaximumCapacityCubicFeet()
+        );
+    }
 
     private Employee resolveManager(UUID managerId) {
         if (managerId == null) {
@@ -59,8 +73,8 @@ public class WarehouseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Manager employee not found: " + managerId));
     }
 
-    // CREATE
-    public WarehouseDto create(WarehouseDto dto) {
+ // CREATE
+    public WarehouseResponseDto create(WarehouseDto dto) {
         log.debug("Request to create Warehouse with name='{}'", dto.name());
 
         Employee manager = resolveManager(dto.managerEmployeeId());
@@ -77,19 +91,21 @@ public class WarehouseService {
 
         Warehouse saved = repo.save(warehouse);
         log.info("Created Warehouse id={} name='{}'", saved.getWarehouseId(), saved.getName());
-        return toDto(saved);
+        return toResponseDto(saved);
     }
 
     // READ ALL
-    public List<WarehouseDto> findAllWarehouses() {
+    public List<WarehouseResponseDto> findAllWarehouses() {
         log.debug("Fetching all Warehouses");
         List<Warehouse> warehouses = repo.findAll();
         log.info("Fetched {} Warehouses", warehouses.size());
-        return warehouses.stream().map(this::toDto).toList();
+        return warehouses.stream()
+                .map(this::toResponseDto)
+                .toList();
     }
 
     // READ ONE
-    public WarehouseDto findById(Integer id) {
+    public WarehouseResponseDto findById(Integer id) {
         log.debug("Fetching Warehouse by id={}", id);
         Warehouse warehouse = repo.findById(id)
                 .orElseThrow(() -> {
@@ -98,11 +114,11 @@ public class WarehouseService {
                 });
 
         log.info("Found Warehouse id={} name='{}'", warehouse.getWarehouseId(), warehouse.getName());
-        return toDto(warehouse);
+        return toResponseDto(warehouse);
     }
 
     // UPDATE
-    public WarehouseDto update(Integer id, WarehouseDto dto) {
+    public WarehouseResponseDto update(Integer id, WarehouseDto dto) {
         log.debug("Updating Warehouse id={} with name='{}'", id, dto.name());
 
         Warehouse existing = repo.findById(id)
@@ -123,7 +139,7 @@ public class WarehouseService {
 
         Warehouse saved = repo.save(existing);
         log.info("Updated Warehouse id={} to name='{}'", saved.getWarehouseId(), saved.getName());
-        return toDto(saved);
+        return toResponseDto(saved);
     }
 
     // DELETE

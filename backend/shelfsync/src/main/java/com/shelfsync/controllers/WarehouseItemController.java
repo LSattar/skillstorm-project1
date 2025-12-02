@@ -1,6 +1,7 @@
 package com.shelfsync.controllers;
 
 import com.shelfsync.dtos.WarehouseItemDto;
+import com.shelfsync.dtos.WarehouseItemResponse;
 import com.shelfsync.services.WarehouseItemService;
 
 import jakarta.validation.Valid;
@@ -21,32 +22,32 @@ public class WarehouseItemController {
 
     // CREATE
     @PostMapping
-    public ResponseEntity<WarehouseItemDto> create(@Valid @RequestBody WarehouseItemDto dto) {
-        WarehouseItemDto created = service.create(dto);
+    public ResponseEntity<WarehouseItemResponse> create(@Valid @RequestBody WarehouseItemDto dto) {
+        WarehouseItemResponse created = service.create(dto);
         return ResponseEntity.ok(created);
     }
 
     // READ ONE
     @GetMapping("/{warehouseId}/{itemId}")
-    public ResponseEntity<WarehouseItemDto> getById(@PathVariable Integer warehouseId,
+    public ResponseEntity<WarehouseItemResponse> getById(@PathVariable Integer warehouseId,
                                                     @PathVariable Integer itemId) {
-        WarehouseItemDto dto = service.findById(warehouseId, itemId);
+        WarehouseItemResponse dto = service.findById(warehouseId, itemId);
         return ResponseEntity.ok(dto);
     }
 
     // READ ALL
     @GetMapping
-    public ResponseEntity<List<WarehouseItemDto>> getAll() {
-        List<WarehouseItemDto> all = service.findAll();
+    public ResponseEntity<List<WarehouseItemResponse>> getAll() {
+        List<WarehouseItemResponse> all = service.findAll();
         return ResponseEntity.ok(all);
     }
 
     // UPDATE
     @PutMapping("/{warehouseId}/{itemId}")
-    public ResponseEntity<WarehouseItemDto> update(@PathVariable Integer warehouseId,
+    public ResponseEntity<WarehouseItemResponse> update(@PathVariable Integer warehouseId,
                                                    @PathVariable Integer itemId,
                                                    @RequestBody WarehouseItemDto dto) {
-        WarehouseItemDto updated = service.update(warehouseId, itemId, dto);
+        WarehouseItemResponse updated = service.update(warehouseId, itemId, dto);
         return ResponseEntity.ok(updated);
     }
 

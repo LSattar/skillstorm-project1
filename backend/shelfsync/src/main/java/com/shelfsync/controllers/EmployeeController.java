@@ -1,6 +1,7 @@
 package com.shelfsync.controllers;
 
 import com.shelfsync.dtos.EmployeeDto;
+import com.shelfsync.dtos.EmployeeResponseDto;
 import com.shelfsync.services.EmployeeService;
 
 import jakarta.validation.Valid;
@@ -22,30 +23,30 @@ public class EmployeeController {
 
     // CREATE
     @PostMapping
-    public ResponseEntity<EmployeeDto> create(@Valid @RequestBody EmployeeDto dto) {
-        EmployeeDto created = service.create(dto);
+    public ResponseEntity<EmployeeResponseDto> create(@Valid @RequestBody EmployeeDto dto) {
+        EmployeeResponseDto created = service.create(dto);
         return ResponseEntity.ok(created);
     }
 
     // READ ONE
     @GetMapping("/{id}")
-    public ResponseEntity<EmployeeDto> getById(@PathVariable UUID id) {
-        EmployeeDto dto = service.findById(id);
+    public ResponseEntity<EmployeeResponseDto> getById(@PathVariable UUID id) {
+        EmployeeResponseDto dto = service.findById(id);
         return ResponseEntity.ok(dto);
     }
 
     // READ ALL
     @GetMapping
-    public ResponseEntity<List<EmployeeDto>> getAll() {
-        List<EmployeeDto> employees = service.findAllEmployees();
+    public ResponseEntity<List<EmployeeResponseDto>> getAll() {
+        List<EmployeeResponseDto> employees = service.findAllEmployees();
         return ResponseEntity.ok(employees);
     }
 
     // UPDATE
     @PutMapping("/{id}")
-    public ResponseEntity<EmployeeDto> update(@PathVariable UUID id,
+    public ResponseEntity<EmployeeResponseDto> update(@PathVariable UUID id,
                                               @RequestBody EmployeeDto dto) {
-        EmployeeDto updated = service.update(id, dto);
+        EmployeeResponseDto updated = service.update(id, dto);
         return ResponseEntity.ok(updated);
     }
 

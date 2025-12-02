@@ -11,6 +11,7 @@ import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Item;
 import com.shelfsync.models.Warehouse;
 import com.shelfsync.models.WarehouseItem;
+import com.shelfsync.dtos.WarehouseItemResponse;
 import com.shelfsync.models.WarehouseItemKey;
 import com.shelfsync.repositories.ItemRepository;
 import com.shelfsync.repositories.WarehouseItemRepository;
@@ -47,6 +48,14 @@ public class WarehouseItemService {
                 wi.getQuantity()
         );
     }
+    
+    private WarehouseItemResponse toResponse(WarehouseItem wi) {
+        return new WarehouseItemResponse(
+                wi.getWarehouse(),
+                wi.getItem(),
+                wi.getQuantity()
+        );
+    }
 
     private Warehouse resolveWarehouse(Integer warehouseId) {
         if (warehouseId == null) {
@@ -64,8 +73,8 @@ public class WarehouseItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + itemId));
     }
 
-    // CREATE
-    public WarehouseItemDto create(WarehouseItemDto dto) {
+ // CREATE
+    public WarehouseItemResponse create(WarehouseItemDto dto) {
         log.debug("Creating WarehouseItem: warehouseId={} itemId={} qty={}",
                 dto.warehouseId(), dto.itemId(), dto.quantity());
 
@@ -85,19 +94,21 @@ public class WarehouseItemService {
                 saved.getItem().getItemId(),
                 saved.getQuantity());
 
-        return toDto(saved);
+        return toResponse(saved);
     }
 
     // READ ALL
-    public List<WarehouseItemDto> findAll() {
+    public List<WarehouseItemResponse> findAll() {
         log.debug("Fetching all WarehouseItems");
         List<WarehouseItem> all = repo.findAll();
         log.info("Fetched {} WarehouseItems", all.size());
-        return all.stream().map(this::toDto).toList();
+        return all.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     // READ ONE
-    public WarehouseItemDto findById(Integer warehouseId, Integer itemId) {
+    public WarehouseItemResponse findById(Integer warehouseId, Integer itemId) {
         log.debug("Fetching WarehouseItem warehouseId={} itemId={}", warehouseId, itemId);
 
         WarehouseItemKey key = buildKey(warehouseId, itemId);
@@ -113,11 +124,11 @@ public class WarehouseItemService {
                 entity.getItem().getItemId(),
                 entity.getQuantity());
 
-        return toDto(entity);
+        return toResponse(entity);
     }
 
     // UPDATE (quantity)
-    public WarehouseItemDto update(Integer warehouseId, Integer itemId, WarehouseItemDto dto) {
+    public WarehouseItemResponse update(Integer warehouseId, Integer itemId, WarehouseItemDto dto) {
         log.debug("Updating WarehouseItem warehouseId={} itemId={} newQty={}",
                 warehouseId, itemId, dto.quantity());
 
@@ -137,7 +148,7 @@ public class WarehouseItemService {
                 saved.getItem().getItemId(),
                 saved.getQuantity());
 
-        return toDto(saved);
+        return toResponse(saved);
     }
 
     // DELETE

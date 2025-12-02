@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.shelfsync.dtos.EmployeeDto;
+import com.shelfsync.dtos.EmployeeResponseDto;
 import com.shelfsync.exceptions.ResourceConflictException;
 import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Employee;
@@ -42,6 +43,17 @@ public class EmployeeService {
                 warehouseId
         );
     }
+    
+    private EmployeeResponseDto toResponseDto(Employee employee) {
+        return new EmployeeResponseDto(
+                employee.getEmployeeId(),
+                employee.getFirstName(),
+                employee.getLastName(),
+                employee.getPhone(),
+                employee.getEmail(),
+                employee.getAssignedWarehouse() 
+        );
+    }
 
     private Warehouse resolveWarehouse(Integer warehouseId) {
         if (warehouseId == null) {
@@ -51,8 +63,9 @@ public class EmployeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found: " + warehouseId));
     }
 
+
     // CREATE
-    public EmployeeDto create(EmployeeDto dto) {
+    public EmployeeResponseDto create(EmployeeDto dto) {
         log.debug("Request to create Employee with email='{}'", dto.email());
 
         if (repo.existsByEmail(dto.email())) {
@@ -72,19 +85,21 @@ public class EmployeeService {
 
         Employee saved = repo.save(employee);
         log.info("Created Employee id={} email='{}'", saved.getEmployeeId(), saved.getEmail());
-        return toDto(saved);
+        return toResponseDto(saved);
     }
 
     // READ ALL
-    public List<EmployeeDto> findAllEmployees() {
+    public List<EmployeeResponseDto> findAllEmployees() {
         log.debug("Fetching all Employees");
         List<Employee> employees = repo.findAll();
         log.info("Fetched {} Employees", employees.size());
-        return employees.stream().map(this::toDto).toList();
+        return employees.stream()
+                .map(this::toResponseDto)
+                .toList();
     }
 
     // READ ONE
-    public EmployeeDto findById(UUID id) {
+    public EmployeeResponseDto findById(UUID id) {
         log.debug("Fetching Employee by id={}", id);
         Employee employee = repo.findById(id)
                 .orElseThrow(() -> {
@@ -93,11 +108,11 @@ public class EmployeeService {
                 });
 
         log.info("Found Employee id={} email='{}'", employee.getEmployeeId(), employee.getEmail());
-        return toDto(employee);
+        return toResponseDto(employee);
     }
 
     // UPDATE
-    public EmployeeDto update(UUID id, EmployeeDto dto) {
+    public EmployeeResponseDto update(UUID id, EmployeeDto dto) {
         log.debug("Updating Employee id={} with email='{}'", id, dto.email());
 
         Employee existing = repo.findById(id)
@@ -107,7 +122,9 @@ public class EmployeeService {
                 });
 
         // Email uniqueness check on update
-        if (dto.email() != null && !dto.email().equals(existing.getEmail()) && repo.existsByEmail(dto.email())) {
+        if (dto.email() != null &&
+            !dto.email().equals(existing.getEmail()) &&
+            repo.existsByEmail(dto.email())) {
             log.warn("Cannot update Employee id={}: email='{}' already in use", id, dto.email());
             throw new ResourceConflictException("Email must be unique");
         }
@@ -122,7 +139,7 @@ public class EmployeeService {
 
         Employee saved = repo.save(existing);
         log.info("Updated Employee id={} email='{}'", saved.getEmployeeId(), saved.getEmail());
-        return toDto(saved);
+        return toResponseDto(saved);
     }
 
     // DELETE
