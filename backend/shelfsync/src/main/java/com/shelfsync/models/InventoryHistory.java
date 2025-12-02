@@ -2,6 +2,8 @@ package com.shelfsync.models;
 
 import java.time.OffsetDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import jakarta.persistence.*;
 
 
@@ -34,6 +36,7 @@ public class InventoryHistory {
     @Column(name = "reason")
     private String reason;
 
+    @CreationTimestamp
     @Column(name = "occurred_at", nullable = false)
     private OffsetDateTime occurredAt;
 

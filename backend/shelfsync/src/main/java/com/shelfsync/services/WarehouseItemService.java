@@ -17,6 +17,8 @@ import com.shelfsync.repositories.ItemRepository;
 import com.shelfsync.repositories.WarehouseItemRepository;
 import com.shelfsync.repositories.WarehouseRepository;
 
+import jakarta.transaction.Transactional;
+
 @Service
 public class WarehouseItemService {
 
@@ -50,9 +52,17 @@ public class WarehouseItemService {
     }
     
     private WarehouseItemResponse toResponse(WarehouseItem wi) {
+        Warehouse w = wi.getWarehouse();
+        Item i = wi.getItem();
+
         return new WarehouseItemResponse(
-                wi.getWarehouse(),
-                wi.getItem(),
+                w.getWarehouseId(),
+                w.getName(),
+                w.getAddress(),
+                w.getCity(),
+                w.getState(),
+                w.getZip(),
+                i,               
                 wi.getQuantity()
         );
     }
@@ -71,6 +81,42 @@ public class WarehouseItemService {
         }
         return itemRepo.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + itemId));
+    }
+    
+    @Transactional
+    public WarehouseItemResponse applyQuantityChange(Integer warehouseId, Integer itemId, int delta) {
+        Warehouse warehouse = resolveWarehouse(warehouseId);
+        Item item = resolveItem(itemId);
+
+        WarehouseItemKey key = buildKey(warehouseId, itemId);
+
+        WarehouseItem wi = repo.findById(key).orElse(null);
+
+        if (wi == null) {
+            if (delta < 0) {
+                throw new IllegalArgumentException(
+                        "Cannot reduce quantity below zero for a non-existent WarehouseItem"
+                );
+            }
+            wi = new WarehouseItem();
+            wi.setId(key);
+            wi.setWarehouse(warehouse);
+            wi.setItem(item);
+            wi.setQuantity(delta);
+        } else {
+            int newQty = wi.getQuantity() + delta;
+            if (newQty < 0) {
+                throw new IllegalArgumentException("Resulting quantity would be negative for warehouseId="
+                        + warehouseId + " itemId=" + itemId);
+            }
+            wi.setQuantity(newQty);
+        }
+
+        WarehouseItem saved = repo.save(wi);
+        log.info("Adjusted WarehouseItem warehouseId={} itemId={} delta={} newQty={}",
+                warehouseId, itemId, delta, saved.getQuantity());
+
+        return toResponse(saved);
     }
 
  // CREATE

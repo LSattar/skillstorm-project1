@@ -1,5 +1,6 @@
 package com.shelfsync.controllers;
 
+import com.shelfsync.dtos.WarehouseCapacityResponse;
 import com.shelfsync.dtos.WarehouseDto;
 import com.shelfsync.dtos.WarehouseResponseDto;
 import com.shelfsync.services.WarehouseService;
@@ -54,5 +55,15 @@ public class WarehouseController {
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         service.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @GetMapping("/{id}/capacity")
+    public ResponseEntity<WarehouseCapacityResponse> getCapacity(@PathVariable Integer id) {
+        return ResponseEntity.ok(service.getCapacity(id));
+    }
+
+    @GetMapping("/capacity")
+    public ResponseEntity<List<WarehouseCapacityResponse>> getAllCapacities() {
+        return ResponseEntity.ok(service.getAllCapacities());
     }
 }

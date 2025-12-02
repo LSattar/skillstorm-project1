@@ -1,6 +1,7 @@
 package com.shelfsync.services;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.shelfsync.dtos.WarehouseCapacityResponse;
 import com.shelfsync.dtos.WarehouseDto;
 import com.shelfsync.dtos.WarehouseResponseDto;
 import com.shelfsync.exceptions.ResourceConflictException;
@@ -71,6 +73,11 @@ public class WarehouseService {
         }
         return employeeRepo.findById(managerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Manager employee not found: " + managerId));
+    }
+    
+    private Warehouse resolveWarehouse(Integer warehouseId) {
+        return repo.findById(warehouseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found: " + warehouseId));
     }
 
  // CREATE
@@ -167,5 +174,69 @@ public class WarehouseService {
 
         repo.delete(existing);
         log.info("Deleted Warehouse id={}", id);
+    }
+    
+    public WarehouseCapacityResponse getCapacity(Integer warehouseId) {
+        Warehouse warehouse = resolveWarehouse(warehouseId);
+
+        BigDecimal max = warehouse.getMaximumCapacityCubicFeet(); 
+
+        BigDecimal used = warehouseItemRepo.findUsedCapacityCubicFeet(warehouseId);
+        if (used == null) {
+            used = BigDecimal.ZERO;
+        }
+
+        BigDecimal available = (max != null)
+                ? max.subtract(used)
+                : BigDecimal.ZERO;
+
+        BigDecimal utilization = BigDecimal.ZERO;
+        if (max != null && max.compareTo(BigDecimal.ZERO) > 0) {
+            // used / max * 100 with scale & rounding
+            utilization = used
+                    .divide(max, 1, RoundingMode.HALF_UP)       
+                    .multiply(BigDecimal.valueOf(100));
+        }
+
+        return new WarehouseCapacityResponse(
+                warehouseId,
+                max,
+                used,
+                available,
+                utilization
+        );
+    }
+    
+    public List<WarehouseCapacityResponse> getAllCapacities() {
+        List<Warehouse> warehouses = repo.findAll();
+
+        return warehouses.stream()
+                .map(w -> {
+                    BigDecimal max = w.getMaximumCapacityCubicFeet();
+                    BigDecimal used = warehouseItemRepo.findUsedCapacityCubicFeet(w.getWarehouseId());
+                    if (used == null) {
+                        used = BigDecimal.ZERO;
+                    }
+
+                    BigDecimal available = (max != null)
+                            ? max.subtract(used)
+                            : BigDecimal.ZERO;
+
+                    BigDecimal utilization = BigDecimal.ZERO;
+                    if (max != null && max.compareTo(BigDecimal.ZERO) > 0) {
+                        utilization = used
+                                .divide(max, 4, RoundingMode.HALF_UP)   
+                                .multiply(BigDecimal.valueOf(100));
+                    }
+
+                    return new WarehouseCapacityResponse(
+                            w.getWarehouseId(),
+                            max,
+                            used,
+                            available,
+                            utilization
+                    );
+                })
+                .toList();
     }
 }
