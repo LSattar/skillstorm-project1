@@ -12,11 +12,11 @@ import org.springframework.stereotype.Service;
 import com.shelfsync.dtos.ItemInventorySummaryResponse;
 import com.shelfsync.dtos.ItemWarehouseQuantity;
 import com.shelfsync.dtos.WarehouseItemDto;
+import com.shelfsync.dtos.WarehouseItemResponse;
 import com.shelfsync.exceptions.ResourceNotFoundException;
 import com.shelfsync.models.Item;
 import com.shelfsync.models.Warehouse;
 import com.shelfsync.models.WarehouseItem;
-import com.shelfsync.dtos.WarehouseItemResponse;
 import com.shelfsync.models.WarehouseItemKey;
 import com.shelfsync.repositories.ItemRepository;
 import com.shelfsync.repositories.WarehouseItemRepository;
@@ -99,9 +99,11 @@ public class WarehouseItemService {
 
         if (wi == null) {
             if (delta < 0) {
-                throw new IllegalArgumentException(
-                        "Cannot reduce quantity below zero for a non-existent WarehouseItem"
-                );
+                // Log full details for debugging
+                log.warn("Attempted to reduce quantity below zero for non-existent item: warehouseId={} itemId={} delta={}",
+                        warehouseId, itemId, delta);
+                // Throw user-friendly message without IDs
+                throw new IllegalArgumentException("Cannot reduce quantity below zero for a non-existent item");
             }
             wi = new WarehouseItem();
             wi.setId(key);
@@ -111,8 +113,11 @@ public class WarehouseItemService {
         } else {
             int newQty = wi.getQuantity() + delta;
             if (newQty < 0) {
-                throw new IllegalArgumentException("Resulting quantity would be negative for warehouseId="
-                        + warehouseId + " itemId=" + itemId);
+                // Log full details for debugging
+                log.warn("Attempted to reduce quantity below zero: warehouseId={} itemId={} currentQty={} delta={}",
+                        warehouseId, itemId, wi.getQuantity(), delta);
+                // Throw user-friendly message without IDs
+                throw new IllegalArgumentException("Resulting quantity would be negative");
             }
             wi.setQuantity(newQty);
         }
