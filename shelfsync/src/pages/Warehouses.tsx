@@ -185,7 +185,7 @@ export const Warehouses = () => {
     return (
         <Container className="mt-3">
             <Row>
-                <Col><h1>Warehouses</h1></Col>
+                <Col className='text-start'><h1>Warehouses</h1></Col>
                 <Col className="text-end">
                     <Button onClick={handleAddNew}>
                         <i className="bi bi-plus-circle me-1"></i>
@@ -219,7 +219,7 @@ export const Warehouses = () => {
                                                     </span>
                                                 </div>
                                                 <div className="d-flex align-items-center gap-2">
-                                                    <span className={`badge ${capacityPercent >= 90 ? 'bg-danger' : capacityPercent >= 75 ? 'bg-warning' : 'bg-success'}`}>
+                                                    <span className={`badge ${capacityPercent >= 90 ? 'bg-danger' : capacityPercent >= 75 ? 'bg-warning' : 'bg-success'}`} style={{ fontSize: '1rem', padding: '0.5rem 0.75rem' }}>
                                                         {capacityPercent.toFixed(1)}% Capacity
                                                     </span>
                                                     <ButtonGroup size="sm" onClick={(e) => e.stopPropagation()}>

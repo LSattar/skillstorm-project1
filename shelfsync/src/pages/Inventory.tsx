@@ -399,11 +399,11 @@ export const Inventory = () => {
     };
 
     return (
-        <Container className="mt-3">
+        <Container className="mt-3 mb-5">
             <Row>
-                <Col><h1>Inventory</h1></Col>
+                <Col className='text-start'><h1>Inventory</h1></Col>
                 <Col className="text-end">
-                    <Button variant="outline-primary" onClick={handleAddNew} className="me-2">
+                    <Button variant="primary" onClick={handleAddNew} className="me-2">
                         <i className="bi bi-plus-circle me-1"></i>
                         Add Item
                     </Button>

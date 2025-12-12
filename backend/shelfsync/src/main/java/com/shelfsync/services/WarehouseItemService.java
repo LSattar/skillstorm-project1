@@ -1,5 +1,6 @@
 package com.shelfsync.services;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -88,6 +89,54 @@ public class WarehouseItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found: " + itemId));
     }
     
+    /**
+     * Checks if adding the specified quantity of an item would exceed the warehouse's capacity.
+     * Only checks when item quantity is being changed.
+     * 
+     * @param warehouse The warehouse to check capacity for
+     * @param item The item being added
+     * @param delta The quantity change
+     * @throws IllegalArgumentException if adding the items would exceed warehouse capacity
+     */
+    private void checkCapacity(Warehouse warehouse, Item item, int delta) {
+        if (delta <= 0) {
+            return;
+        }
+        
+        BigDecimal maxCapacity = warehouse.getMaximumCapacityCubicFeet();
+        if (maxCapacity == null) {
+            log.warn("Warehouse {} has null maximum capacity, skipping capacity check", warehouse.getWarehouseId());
+            return;
+        }
+        
+        BigDecimal currentUsed = repo.findUsedCapacityCubicFeet(warehouse.getWarehouseId());
+        if (currentUsed == null) {
+            currentUsed = BigDecimal.ZERO;
+        }
+
+        BigDecimal itemCubicFeet = item.getCubicFeet();
+        if (itemCubicFeet == null) {
+            log.warn("Item {} has null cubicFeet, skipping capacity check", item.getItemId());
+            return;
+        }
+
+        BigDecimal additionalCapacityNeeded = itemCubicFeet.multiply(BigDecimal.valueOf(delta));
+        
+        BigDecimal newUsedCapacity = currentUsed.add(additionalCapacityNeeded);
+        
+        if (newUsedCapacity.compareTo(maxCapacity) > 0) {
+            log.warn("Attempted to exceed warehouse capacity: warehouseId={} itemId={} currentUsed={} maxCapacity={} additionalNeeded={} newTotal={}",
+                    warehouse.getWarehouseId(), item.getItemId(), currentUsed, maxCapacity, 
+                    additionalCapacityNeeded, newUsedCapacity);
+            
+            BigDecimal available = maxCapacity.subtract(currentUsed);
+            throw new IllegalArgumentException(
+                String.format("Adding this quantity would exceed warehouse capacity. Available space: %.2f cubic feet, needed: %.2f cubic feet",
+                    available.doubleValue(), additionalCapacityNeeded.doubleValue())
+            );
+        }
+    }
+    
     @Transactional
     public WarehouseItemResponse applyQuantityChange(Integer warehouseId, Integer itemId, int delta) {
         Warehouse warehouse = resolveWarehouse(warehouseId);
@@ -105,6 +154,10 @@ public class WarehouseItemService {
                 // Throw user-friendly message without IDs
                 throw new IllegalArgumentException("Cannot reduce quantity below zero for a non-existent item");
             }
+            
+            // Check capacity before creating new warehouse item
+            checkCapacity(warehouse, item, delta);
+            
             wi = new WarehouseItem();
             wi.setId(key);
             wi.setWarehouse(warehouse);
@@ -119,6 +172,10 @@ public class WarehouseItemService {
                 // Throw user-friendly message without IDs
                 throw new IllegalArgumentException("Resulting quantity would be negative");
             }
+            
+            // Check capacity before updating quantity (only if adding items)
+            checkCapacity(warehouse, item, delta);
+            
             wi.setQuantity(newQty);
         }
 

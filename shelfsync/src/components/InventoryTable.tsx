@@ -109,7 +109,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ items, loading, 
                                     ) : (
                                         <ul className="mb-0">
                                             {item.locations.map((location, index) => (
-                                                <li key={index}>
+                                                <li style={{ listStyleType: 'none' }} key={index}>
                                                     {location.warehouseName}: {location.quantity}
                                                 </li>
                                             ))}

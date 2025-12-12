@@ -267,9 +267,7 @@ export const InventoryTransactionModal: React.FC<InventoryTransactionModalProps>
                     <Form.Group className="mb-3">
                         <Form.Label>
                             Quantity Change <span className="text-danger">*</span>
-                            <small className="text-muted ms-2">
-                                (Positive number)
-                            </small>
+
                         </Form.Label>
                         <Form.Control
                             type="number"

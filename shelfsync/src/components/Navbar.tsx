@@ -1,8 +1,11 @@
 import React from 'react';
-import { Navbar as BootstrapNavbar, Nav, Container } from 'react-bootstrap';
+import { Navbar as BootstrapNavbar, Nav, Container, Form } from 'react-bootstrap';
 import { NavLink } from 'react-router-dom';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const Navbar = () => {
+    const { isDarkMode, toggleTheme } = useTheme();
+
     return (
         <BootstrapNavbar bg="dark" variant="dark" expand="lg">
             <Container>
@@ -33,6 +36,18 @@ export const Navbar = () => {
                             <i className="bi bi-people me-1"></i>
                             Employees
                         </Nav.Link>
+                    </Nav>
+                    <Nav>
+                        <Form className="ms-2 d-flex align-items-center">
+                            <Form.Check
+                                type="switch"
+                                id="theme-switch"
+                                checked={isDarkMode}
+                                onChange={toggleTheme}
+                                label={isDarkMode ? "Dark" : "Light"}
+                                className="text-light"
+                            />
+                        </Form>
                     </Nav>
                 </BootstrapNavbar.Collapse>
             </Container>
