@@ -1,0 +1,8 @@
+com.shelfsync
+com.shelfsync.config
+com.shelfsync.controllers
+com.shelfsync.dtos
+com.shelfsync.exceptions
+com.shelfsync.models
+com.shelfsync.repositories
+com.shelfsync.services

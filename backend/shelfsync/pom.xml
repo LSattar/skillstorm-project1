@@ -60,6 +60,19 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.6.3</version>
+				<configuration>
+					<outputDirectory>${project.basedir}/../../docs/javadoc</outputDirectory>
+					<reportOutputDirectory>${project.basedir}/../../docs/javadoc</reportOutputDirectory>
+					<destDir>javadoc</destDir>
+					<windowtitle>ShelfSync API Documentation</windowtitle>
+					<doctitle>ShelfSync API Documentation</doctitle>
+					<bottom>Copyright © 2025 ShelfSync. All rights reserved.</bottom>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

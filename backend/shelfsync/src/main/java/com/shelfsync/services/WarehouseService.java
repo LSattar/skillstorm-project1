@@ -20,6 +20,20 @@ import com.shelfsync.repositories.EmployeeRepository;
 import com.shelfsync.repositories.WarehouseItemRepository;
 import com.shelfsync.repositories.WarehouseRepository;
 
+/**
+ * Service for managing warehouse operations.
+ * 
+ * <p>Handles CRUD operations for warehouses, including capacity calculations and
+ * validation of warehouse deletion constraints. Warehouses track their maximum
+ * capacity in cubic feet and can have an assigned manager (employee).
+ * 
+ * <p>Key business rules:
+ * <ul>
+ *   <li>Warehouses cannot be deleted if they contain items or have assigned employees</li>
+ *   <li>Capacity calculations aggregate item quantities × cubic feet per item</li>
+ *   <li>Utilization percentage is calculated as (used / maximum) × 100</li>
+ * </ul>
+ */
 @Service
 public class WarehouseService {
 
@@ -80,7 +94,13 @@ public class WarehouseService {
                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found: " + warehouseId));
     }
 
- // CREATE
+    /**
+     * Creates a new warehouse with the specified information.
+     * 
+     * @param dto The warehouse data transfer object containing warehouse details
+     * @return The created warehouse response
+     * @throws ResourceNotFoundException if the assigned manager employee does not exist
+     */
     public WarehouseResponseDto create(WarehouseDto dto) {
         log.debug("Request to create Warehouse with name='{}'", dto.name());
 
@@ -101,7 +121,11 @@ public class WarehouseService {
         return toResponseDto(saved);
     }
 
-    // READ ALL
+    /**
+     * Retrieves all warehouses in the system.
+     * 
+     * @return A list of all warehouses
+     */
     public List<WarehouseResponseDto> findAllWarehouses() {
         log.debug("Fetching all Warehouses");
         List<Warehouse> warehouses = repo.findAll();
@@ -111,7 +135,13 @@ public class WarehouseService {
                 .toList();
     }
 
-    // READ ONE
+    /**
+     * Retrieves a specific warehouse by its ID.
+     * 
+     * @param id The warehouse ID
+     * @return The warehouse response
+     * @throws ResourceNotFoundException if the warehouse does not exist
+     */
     public WarehouseResponseDto findById(Integer id) {
         log.debug("Fetching Warehouse by id={}", id);
         Warehouse warehouse = repo.findById(id)
@@ -124,7 +154,14 @@ public class WarehouseService {
         return toResponseDto(warehouse);
     }
 
-    // UPDATE
+    /**
+     * Updates an existing warehouse's information.
+     * 
+     * @param id The warehouse ID
+     * @param dto The warehouse data transfer object with updated information
+     * @return The updated warehouse response
+     * @throws ResourceNotFoundException if the warehouse or assigned manager does not exist
+     */
     public WarehouseResponseDto update(Integer id, WarehouseDto dto) {
         log.debug("Updating Warehouse id={} with name='{}'", id, dto.name());
 
@@ -149,7 +186,16 @@ public class WarehouseService {
         return toResponseDto(saved);
     }
 
-    // DELETE
+    /**
+     * Deletes a warehouse by its ID.
+     * 
+     * <p>Validates that the warehouse is not in use before deletion. A warehouse
+     * cannot be deleted if it contains items or has employees assigned to it.
+     * 
+     * @param id The warehouse ID to delete
+     * @throws ResourceNotFoundException if the warehouse does not exist
+     * @throws ResourceConflictException if the warehouse is in use by items or employees
+     */
     public void deleteById(Integer id) {
         log.debug("Deleting Warehouse id={}", id);
 
@@ -176,6 +222,16 @@ public class WarehouseService {
         log.info("Deleted Warehouse id={}", id);
     }
     
+    /**
+     * Calculates and returns the capacity information for a specific warehouse.
+     * 
+     * <p>Calculates used capacity by summing (quantity × cubicFeet) for all items
+     * in the warehouse. Utilization percentage is rounded to 1 decimal place.
+     * 
+     * @param warehouseId The warehouse ID
+     * @return A response containing maximum, used, available capacity and utilization percentage
+     * @throws ResourceNotFoundException if the warehouse does not exist
+     */
     public WarehouseCapacityResponse getCapacity(Integer warehouseId) {
         Warehouse warehouse = resolveWarehouse(warehouseId);
 
@@ -207,6 +263,15 @@ public class WarehouseService {
         );
     }
     
+    /**
+     * Calculates and returns capacity information for all warehouses.
+     * 
+     * <p>Similar to {@link #getCapacity(Integer)}, but processes all warehouses
+     * in a single operation. Utilization percentage is rounded to 4 decimal places
+     * for consistency in batch operations.
+     * 
+     * @return A list of capacity responses, one for each warehouse
+     */
     public List<WarehouseCapacityResponse> getAllCapacities() {
         List<Warehouse> warehouses = repo.findAll();
 

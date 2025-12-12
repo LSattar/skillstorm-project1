@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"com.shelfsync"},{"l":"com.shelfsync.config"},{"l":"com.shelfsync.controllers"},{"l":"com.shelfsync.dtos"},{"l":"com.shelfsync.exceptions"},{"l":"com.shelfsync.models"},{"l":"com.shelfsync.repositories"},{"l":"com.shelfsync.services"}];updateSearchResults();

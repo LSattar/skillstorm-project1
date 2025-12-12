@@ -13,6 +13,17 @@ import com.shelfsync.models.Company;
 import com.shelfsync.repositories.CompanyRepository;
 import com.shelfsync.repositories.ItemRepository;
 
+/**
+ * Service for managing company operations.
+ * 
+ * <p>Handles CRUD operations for companies, which represent manufacturers or suppliers
+ * of inventory items. Companies can be associated with multiple items.
+ * 
+ * <p>Key business rules:
+ * <ul>
+ *   <li>Companies cannot be deleted if they are associated with existing items</li>
+ * </ul>
+ */
 @Service
 public class CompanyService {
 
@@ -36,7 +47,12 @@ public class CompanyService {
         );
     }
 
-    // CREATE
+    /**
+     * Creates a new company with the specified information.
+     * 
+     * @param dto The company data transfer object containing company information
+     * @return The created company
+     */
     public CompanyDto create(CompanyDto dto) {
         log.debug("Request to create Company with name='{}'", dto.name());
 
@@ -51,7 +67,11 @@ public class CompanyService {
         return toDto(saved);
     }
 
-    // READ ALL
+    /**
+     * Retrieves all companies in the system.
+     * 
+     * @return A list of all companies
+     */
     public List<CompanyDto> findAllCompanies() {
         log.debug("Fetching all Companies");
         List<Company> companies = repo.findAll();
@@ -59,7 +79,13 @@ public class CompanyService {
         return companies.stream().map(this::toDto).toList();
     }
 
-    // READ ONE
+    /**
+     * Retrieves a specific company by its ID.
+     * 
+     * @param id The company ID
+     * @return The company
+     * @throws ResourceNotFoundException if the company does not exist
+     */
     public CompanyDto findById(Integer id) {
         log.debug("Fetching Company by id={}", id);
         Company company = repo.findById(id)
@@ -72,7 +98,14 @@ public class CompanyService {
         return toDto(company);
     }
 
-    // UPDATE
+    /**
+     * Updates an existing company's information.
+     * 
+     * @param id The company ID
+     * @param dto The company data transfer object with updated information
+     * @return The updated company
+     * @throws ResourceNotFoundException if the company does not exist
+     */
     public CompanyDto update(Integer id, CompanyDto dto) {
         log.debug("Updating Company id={} with name='{}'", id, dto.name());
 
@@ -92,7 +125,16 @@ public class CompanyService {
         return toDto(saved);
     }
 
-    // DELETE
+    /**
+     * Deletes a company by its ID.
+     * 
+     * <p>Validates that the company is not in use before deletion. A company
+     * cannot be deleted if it is associated with any existing items.
+     * 
+     * @param id The company ID to delete
+     * @throws ResourceNotFoundException if the company does not exist
+     * @throws ResourceConflictException if the company is associated with existing items
+     */
     public void deleteById(Integer id) {
         log.debug("Deleting Company id={}", id);
 

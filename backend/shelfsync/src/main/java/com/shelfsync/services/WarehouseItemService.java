@@ -25,6 +25,25 @@ import com.shelfsync.repositories.WarehouseRepository;
 
 import jakarta.transaction.Transactional;
 
+/**
+ * Service for managing warehouse inventory operations.
+ * 
+ * <p>This service handles the relationship between warehouses and items, including:
+ * <ul>
+ *   <li>Quantity changes (inbound, outbound, and transfer operations)</li>
+ *   <li>Capacity validation to prevent exceeding warehouse maximum capacity</li>
+ *   <li>Quantity validation to prevent negative quantities</li>
+ *   <li>Inventory search and aggregation across warehouses</li>
+ * </ul>
+ * 
+ * <p>Key business rules enforced:
+ * <ul>
+ *   <li>Quantities cannot be reduced below zero</li>
+ *   <li>Adding items cannot exceed warehouse capacity (calculated as item quantity × cubic feet)</li>
+ *   <li>All quantity changes are transactional to ensure data consistency</li>
+ * </ul>
+ * 
+ */
 @Service
 public class WarehouseItemService {
 
@@ -90,13 +109,22 @@ public class WarehouseItemService {
     }
     
     /**
-     * Checks if adding the specified quantity of an item would exceed the warehouse's capacity.
-     * Only checks when item quantity is being changed.
+     * Validates that adding the specified quantity of an item will not exceed the warehouse's capacity.
+     * 
+     * <p>This method enforces the business rule that warehouse capacity cannot be exceeded.
+     * Capacity is calculated as: (item quantity) × (item cubic feet per unit).
+     * 
+     * <p>Only performs validation when adding items (delta > 0). Removing items does not
+     * require capacity validation.
+     * 
+     * <p>If capacity would be exceeded, throws an IllegalArgumentException with a user-friendly
+     * message indicating available space and space needed. Full details are logged for debugging.
      * 
      * @param warehouse The warehouse to check capacity for
-     * @param item The item being added
-     * @param delta The quantity change
-     * @throws IllegalArgumentException if adding the items would exceed warehouse capacity
+     * @param item The item being added (must have a valid cubicFeet value)
+     * @param delta The quantity change (must be positive for capacity check to occur)
+     * @throws IllegalArgumentException if adding the items would exceed warehouse maximum capacity.
+     *         The exception message includes available space and space needed in cubic feet.
      */
     private void checkCapacity(Warehouse warehouse, Item item, int delta) {
         if (delta <= 0) {
@@ -137,6 +165,36 @@ public class WarehouseItemService {
         }
     }
     
+    /**
+     * Applies a quantity change to a warehouse item (inbound, outbound, or transfer operation).
+     * 
+     * <p>This is the primary method for recording inventory transactions. It handles:
+     * <ul>
+     *   <li>Creating new warehouse items when they don't exist (for inbound operations)</li>
+     *   <li>Updating existing warehouse item quantities</li>
+     *   <li>Validating that quantities don't go negative</li>
+     *   <li>Validating that capacity isn't exceeded when adding items</li>
+     * </ul>
+     * 
+     * <p>Business rules enforced:
+     * <ul>
+     *   <li>Cannot reduce quantity below zero (throws IllegalArgumentException)</li>
+     *   <li>Cannot add items that would exceed warehouse capacity (throws IllegalArgumentException)</li>
+     *   <li>Cannot reduce quantity for non-existent items (throws IllegalArgumentException)</li>
+     * </ul>
+     * 
+     * <p>This method is transactional to ensure data consistency. If any validation fails,
+     * the entire operation is rolled back.
+     * 
+     * @param warehouseId The ID of the warehouse where the quantity change occurs
+     * @param itemId The ID of the item whose quantity is changing
+     * @param delta The quantity change: positive for adding items (inbound), 
+     *              negative for removing items (outbound), or positive/negative for transfers
+     * @return The updated warehouse item response with current quantity
+     * @throws IllegalArgumentException if the operation would result in negative quantity 
+     *         or exceed warehouse capacity. The message is user-friendly and does not expose IDs.
+     * @throws ResourceNotFoundException if the warehouse or item does not exist
+     */
     @Transactional
     public WarehouseItemResponse applyQuantityChange(Integer warehouseId, Integer itemId, int delta) {
         Warehouse warehouse = resolveWarehouse(warehouseId);
@@ -186,7 +244,17 @@ public class WarehouseItemService {
         return toResponse(saved);
     }
 
- // CREATE
+    /**
+     * Creates a new warehouse item with the specified initial quantity.
+     * 
+     * <p>This method creates a new relationship between a warehouse and an item.
+     * Note: This method does not perform capacity validation. For adding inventory,
+     * use {@link #applyQuantityChange(Integer, Integer, int)} which includes capacity checks.
+     * 
+     * @param dto The warehouse item data transfer object containing warehouseId, itemId, and quantity
+     * @return The created warehouse item response
+     * @throws ResourceNotFoundException if the warehouse or item does not exist
+     */
     public WarehouseItemResponse create(WarehouseItemDto dto) {
         log.debug("Creating WarehouseItem: warehouseId={} itemId={} qty={}",
                 dto.warehouseId(), dto.itemId(), dto.quantity());
@@ -210,7 +278,11 @@ public class WarehouseItemService {
         return toResponse(saved);
     }
 
-    // READ ALL
+    /**
+     * Retrieves all warehouse items across all warehouses.
+     * 
+     * @return A list of all warehouse items with their warehouse and item details
+     */
     public List<WarehouseItemResponse> findAll() {
         log.debug("Fetching all WarehouseItems");
         List<WarehouseItem> all = repo.findAll();
@@ -220,7 +292,14 @@ public class WarehouseItemService {
                 .toList();
     }
 
-    // READ ONE
+    /**
+     * Retrieves a specific warehouse item by warehouse ID and item ID.
+     * 
+     * @param warehouseId The warehouse ID
+     * @param itemId The item ID
+     * @return The warehouse item response
+     * @throws ResourceNotFoundException if the warehouse item does not exist
+     */
     public WarehouseItemResponse findById(Integer warehouseId, Integer itemId) {
         log.debug("Fetching WarehouseItem warehouseId={} itemId={}", warehouseId, itemId);
 
@@ -240,6 +319,23 @@ public class WarehouseItemService {
         return toResponse(entity);
     }
     
+    /**
+     * Searches for inventory items by game title or SKU and aggregates quantities across all warehouses.
+     * 
+     * <p>This method performs a case-insensitive search on item game titles and SKUs.
+     * Results are grouped by item and include:
+     * <ul>
+     *   <li>Total quantity across all warehouses</li>
+     *   <li>Breakdown of quantities by warehouse location</li>
+     * </ul>
+     * 
+     * <p>The search query is trimmed and must not be empty. Partial matches are supported
+     * (e.g., searching "Mario" will find "Super Mario Bros").
+     * 
+     * @param q The search query string (game title or SKU). Must not be null or empty.
+     * @return A list of inventory summary responses, one per matching item, with aggregated quantities
+     * @throws IllegalArgumentException if the search query is null or empty
+     */
     public java.util.List<ItemInventorySummaryResponse> searchInventoryByItem(String q) {
         if (q == null || q.trim().isEmpty()) {
             throw new IllegalArgumentException("Search query q is required");
@@ -283,7 +379,22 @@ public class WarehouseItemService {
                 .toList();
     }
 
-    // UPDATE (quantity)
+    /**
+     * Updates the quantity of an existing warehouse item.
+     * 
+     * <p>This method sets the quantity to an absolute value. For relative quantity changes
+     * (increment/decrement), use {@link #applyQuantityChange(Integer, Integer, int)} instead,
+     * which includes capacity and negative quantity validation.
+     * 
+     * <p>Note: This method does not validate capacity constraints. It simply sets the quantity
+     * to the specified value. Use with caution.
+     * 
+     * @param warehouseId The warehouse ID
+     * @param itemId The item ID
+     * @param dto The warehouse item DTO containing the new quantity value
+     * @return The updated warehouse item response
+     * @throws ResourceNotFoundException if the warehouse item does not exist
+     */
     public WarehouseItemResponse update(Integer warehouseId, Integer itemId, WarehouseItemDto dto) {
         log.debug("Updating WarehouseItem warehouseId={} itemId={} newQty={}",
                 warehouseId, itemId, dto.quantity());
@@ -307,7 +418,16 @@ public class WarehouseItemService {
         return toResponse(saved);
     }
 
-    // DELETE
+    /**
+     * Deletes a warehouse item, removing the relationship between a warehouse and an item.
+     * 
+     * <p>This operation permanently removes the warehouse item record. Any inventory history
+     * records associated with this warehouse item are not affected by this deletion.
+     * 
+     * @param warehouseId The warehouse ID
+     * @param itemId The item ID
+     * @throws ResourceNotFoundException if the warehouse item does not exist
+     */
     public void deleteById(Integer warehouseId, Integer itemId) {
         log.debug("Deleting WarehouseItem warehouseId={} itemId={}", warehouseId, itemId);
 

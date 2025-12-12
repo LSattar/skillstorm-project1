@@ -19,6 +19,21 @@ import com.shelfsync.repositories.InventoryHistoryRepository;
 import com.shelfsync.repositories.ItemRepository;
 import com.shelfsync.repositories.WarehouseItemRepository;
 
+/**
+ * Service for managing inventory items.
+ * 
+ * <p>Handles CRUD operations for items, including validation of SKU uniqueness
+ * and enforcement of deletion constraints. Items represent products that can be
+ * stored in warehouses and tracked in inventory.
+ * 
+ * <p>Key business rules:
+ * <ul>
+ *   <li>SKU (Stock Keeping Unit) must be unique across all items</li>
+ *   <li>Items cannot be deleted if they are in use by warehouse inventory or history records</li>
+ *   <li>Items can be associated with a category and company (both optional)</li>
+ *   <li>Items must have cubic feet and weight values for capacity calculations</li>
+ * </ul>
+ */
 @Service
 public class ItemService {
 
@@ -90,7 +105,17 @@ public class ItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found: " + companyId));
     }
 
- // CREATE
+    /**
+     * Creates a new inventory item with the specified information.
+     * 
+     * <p>Validates that the SKU is unique before creating the item. The item can
+     * optionally be associated with a category and company.
+     * 
+     * @param dto The item data transfer object containing item information
+     * @return The created item response
+     * @throws ResourceConflictException if the SKU is already in use
+     * @throws ResourceNotFoundException if the category or company does not exist
+     */
     public ItemResponseDto create(ItemDto dto) {
         log.debug("Request to create Item with sku='{}', title='{}'",
                 dto.sku(), dto.gameTitle());
@@ -118,7 +143,11 @@ public class ItemService {
         return toResponseDto(saved);
     }
 
-    // READ ALL
+    /**
+     * Retrieves all inventory items in the system.
+     * 
+     * @return A list of all items
+     */
     public List<ItemResponseDto> findAllItems() {
         log.debug("Fetching all Items");
         List<Item> items = repo.findAll();
@@ -128,7 +157,13 @@ public class ItemService {
                 .toList();
     }
 
-    // READ ONE
+    /**
+     * Retrieves a specific item by its ID.
+     * 
+     * @param id The item ID
+     * @return The item response
+     * @throws ResourceNotFoundException if the item does not exist
+     */
     public ItemResponseDto findById(Integer id) {
         log.debug("Fetching Item by id={}", id);
         Item item = repo.findById(id)
@@ -142,7 +177,18 @@ public class ItemService {
         return toResponseDto(item);
     }
 
-    // UPDATE
+    /**
+     * Updates an existing item's information.
+     * 
+     * <p>Validates SKU uniqueness if the SKU is being changed. If the new SKU
+     * is different from the current SKU and already exists, a conflict exception is thrown.
+     * 
+     * @param id The item ID
+     * @param dto The item data transfer object with updated information
+     * @return The updated item response
+     * @throws ResourceNotFoundException if the item, category, or company does not exist
+     * @throws ResourceConflictException if the new SKU is already in use by another item
+     */
     public ItemResponseDto update(Integer id, ItemDto dto) {
         log.debug("Updating Item id={} with sku='{}', title='{}'",
                 id, dto.sku(), dto.gameTitle());
@@ -178,7 +224,16 @@ public class ItemService {
     }
 
 
-    // DELETE
+    /**
+     * Deletes an item by its ID.
+     * 
+     * <p>Validates that the item is not in use before deletion. An item cannot
+     * be deleted if it exists in any warehouse inventory or has history records.
+     * 
+     * @param id The item ID to delete
+     * @throws ResourceNotFoundException if the item does not exist
+     * @throws ResourceConflictException if the item is in use by warehouse inventory or history records
+     */
     public void deleteById(Integer id) {
         log.debug("Deleting Item id={}", id);
 

@@ -21,6 +21,28 @@ import com.shelfsync.repositories.WarehouseRepository;
 
 import jakarta.transaction.Transactional;
 
+/**
+ * Service for managing inventory transaction history.
+ * 
+ * <p>Handles CRUD operations for inventory history records, which track all
+ * inventory movements (inbound, outbound, and transfers). This service automatically
+ * updates warehouse item quantities when history records are created, updated, or deleted.
+ * 
+ * <p>Key business rules:
+ * <ul>
+ *   <li>Creating a history record automatically applies quantity changes to warehouse items</li>
+ *   <li>Updating a history record reverses the old changes and applies the new changes</li>
+ *   <li>Deleting a history record reverses the quantity changes</li>
+ *   <li>All operations are transactional to ensure data consistency</li>
+ * </ul>
+ * 
+ * <p>Transaction types:
+ * <ul>
+ *   <li>INBOUND: Items added to a warehouse (toWarehouse required, fromWarehouse null)</li>
+ *   <li>OUTBOUND: Items removed from a warehouse (fromWarehouse required, toWarehouse null)</li>
+ *   <li>TRANSFER: Items moved between warehouses (both fromWarehouse and toWarehouse required)</li>
+ * </ul>
+ */
 @Service
 public class InventoryHistoryService {
 
@@ -114,7 +136,18 @@ public class InventoryHistoryService {
 	    }
 	}
 
-	// CREATE
+	/**
+	 * Creates a new inventory history record and applies the quantity change to warehouse items.
+	 * 
+	 * <p>This method is transactional. When a history record is created, it automatically
+	 * updates the corresponding warehouse item quantities through the WarehouseItemService.
+	 * The quantity change is applied based on the transaction type (inbound, outbound, transfer).
+	 * 
+	 * @param dto The inventory history data transfer object containing transaction details
+	 * @return The created inventory history record
+	 * @throws ResourceNotFoundException if the item, warehouse(s), or employee does not exist
+	 * @throws IllegalArgumentException if the operation would violate business rules (handled by WarehouseItemService)
+	 */
     @Transactional
     public InventoryHistoryDto create(InventoryHistoryDto dto) {
         log.debug("Creating InventoryHistory: itemId={} fromWarehouseId={} toWarehouseId={} qtyChange={} type={}",
@@ -147,7 +180,11 @@ public class InventoryHistoryService {
         return toDto(saved);
     }
 
-	// READ ALL
+	/**
+	 * Retrieves all inventory history records in the system.
+	 * 
+	 * @return A list of all inventory history records
+	 */
 	public List<InventoryHistoryDto> findAll() {
 		log.debug("Fetching all InventoryHistory records");
 		List<InventoryHistory> records = repo.findAll();
@@ -155,7 +192,13 @@ public class InventoryHistoryService {
 		return records.stream().map(this::toDto).toList();
 	}
 
-	// READ ONE
+	/**
+	 * Retrieves a specific inventory history record by its ID.
+	 * 
+	 * @param id The inventory history ID
+	 * @return The inventory history record
+	 * @throws ResourceNotFoundException if the history record does not exist
+	 */
 	public InventoryHistoryDto findById(Integer id) {
 		log.debug("Fetching InventoryHistory by id={}", id);
 		InventoryHistory history = repo.findById(id).orElseThrow(() -> {
@@ -169,6 +212,18 @@ public class InventoryHistoryService {
 		return toDto(history);
 	}
 	
+	/**
+	 * Retrieves inventory history records for a specific warehouse within a date range.
+	 * 
+	 * <p>Returns all transactions (inbound, outbound, and transfers) that involve
+	 * the specified warehouse, either as source or destination, within the given time period.
+	 * 
+	 * @param warehouseId The warehouse ID (required)
+	 * @param start The start date/time of the range (inclusive)
+	 * @param end The end date/time of the range (inclusive)
+	 * @return A list of inventory history records matching the criteria
+	 * @throws IllegalArgumentException if warehouseId is null
+	 */
 	@Transactional
 	public List<InventoryHistoryDto> findByWarehouseAndDateRange(
 	        Integer warehouseId,
@@ -190,6 +245,14 @@ public class InventoryHistoryService {
 	            .toList();
 	}
 	
+	/**
+	 * Retrieves the 10 most recent inventory history records.
+	 * 
+	 * <p>Useful for displaying recent activity across all warehouses.
+	 * Records are ordered by occurrence date/time in descending order (most recent first).
+	 * 
+	 * @return A list of the 10 most recent inventory history records
+	 */
 	@Transactional
 	public List<InventoryHistoryDto> findRecentActivities() {
 	    log.debug("Fetching top 10 most recent inventory history records");
@@ -201,7 +264,24 @@ public class InventoryHistoryService {
 	            .toList();
 	}
 
-	// UPDATE
+	/**
+	 * Updates an existing inventory history record and adjusts warehouse item quantities accordingly.
+	 * 
+	 * <p>This method is transactional and performs the following steps:
+	 * <ol>
+	 *   <li>Reverses the original quantity changes from warehouse items</li>
+	 *   <li>Updates the history record with new values</li>
+	 *   <li>Applies the new quantity changes to warehouse items</li>
+	 * </ol>
+	 * 
+	 * <p>This ensures that warehouse item quantities remain consistent with the history record.
+	 * 
+	 * @param id The inventory history ID
+	 * @param dto The inventory history data transfer object with updated transaction details
+	 * @return The updated inventory history record
+	 * @throws ResourceNotFoundException if the history record, item, warehouse(s), or employee does not exist
+	 * @throws IllegalArgumentException if the operation would violate business rules (handled by WarehouseItemService)
+	 */
 	@Transactional
     public InventoryHistoryDto update(Integer id, InventoryHistoryDto dto) {
         log.debug("Updating InventoryHistory id={}", id);
@@ -236,7 +316,16 @@ public class InventoryHistoryService {
         return toDto(saved);
     }
 
-	// DELETE
+	/**
+	 * Deletes an inventory history record and reverses the quantity changes from warehouse items.
+	 * 
+	 * <p>This method is transactional. When a history record is deleted, it automatically
+	 * reverses the quantity changes that were applied when the record was created. This ensures
+	 * that warehouse item quantities remain accurate.
+	 * 
+	 * @param id The inventory history ID to delete
+	 * @throws ResourceNotFoundException if the history record does not exist
+	 */
     @Transactional
     public void deleteById(Integer id) {
         log.debug("Deleting InventoryHistory id={}", id);

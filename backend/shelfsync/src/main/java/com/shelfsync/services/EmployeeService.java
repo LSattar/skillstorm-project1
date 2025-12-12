@@ -16,6 +16,19 @@ import com.shelfsync.models.Warehouse;
 import com.shelfsync.repositories.EmployeeRepository;
 import com.shelfsync.repositories.WarehouseRepository;
 
+/**
+ * Service for managing employee operations.
+ * 
+ * <p>Handles CRUD operations for employees, including validation of email uniqueness
+ * and assignment to warehouses. Employees are identified by UUID.
+ * 
+ * <p>Key business rules:
+ * <ul>
+ *   <li>Email addresses must be unique across all employees</li>
+ *   <li>Employees can be assigned to a warehouse (optional)</li>
+ *   <li>Employee deletion does not cascade to related records</li>
+ * </ul>
+ */
 @Service
 public class EmployeeService {
 
@@ -64,7 +77,17 @@ public class EmployeeService {
     }
 
 
-    // CREATE
+    /**
+     * Creates a new employee with the specified information.
+     * 
+     * <p>Validates that the email address is unique before creating the employee.
+     * The employee can optionally be assigned to a warehouse.
+     * 
+     * @param dto The employee data transfer object containing employee information
+     * @return The created employee response
+     * @throws ResourceConflictException if the email address is already in use
+     * @throws ResourceNotFoundException if the assigned warehouse does not exist
+     */
     public EmployeeResponseDto create(EmployeeDto dto) {
         log.debug("Request to create Employee with email='{}'", dto.email());
 
@@ -88,7 +111,11 @@ public class EmployeeService {
         return toResponseDto(saved);
     }
 
-    // READ ALL
+    /**
+     * Retrieves all employees in the system.
+     * 
+     * @return A list of all employees
+     */
     public List<EmployeeResponseDto> findAllEmployees() {
         log.debug("Fetching all Employees");
         List<Employee> employees = repo.findAll();
@@ -98,7 +125,13 @@ public class EmployeeService {
                 .toList();
     }
 
-    // READ ONE
+    /**
+     * Retrieves a specific employee by their UUID.
+     * 
+     * @param id The employee UUID
+     * @return The employee response
+     * @throws ResourceNotFoundException if the employee does not exist
+     */
     public EmployeeResponseDto findById(UUID id) {
         log.debug("Fetching Employee by id={}", id);
         Employee employee = repo.findById(id)
@@ -111,7 +144,18 @@ public class EmployeeService {
         return toResponseDto(employee);
     }
 
-    // UPDATE
+    /**
+     * Updates an existing employee's information.
+     * 
+     * <p>Validates email uniqueness if the email is being changed. If the new email
+     * is different from the current email and already exists, a conflict exception is thrown.
+     * 
+     * @param id The employee UUID
+     * @param dto The employee data transfer object with updated information
+     * @return The updated employee response
+     * @throws ResourceNotFoundException if the employee does not exist
+     * @throws ResourceConflictException if the new email address is already in use by another employee
+     */
     public EmployeeResponseDto update(UUID id, EmployeeDto dto) {
         log.debug("Updating Employee id={} with email='{}'", id, dto.email());
 
@@ -142,7 +186,12 @@ public class EmployeeService {
         return toResponseDto(saved);
     }
 
-    // DELETE
+    /**
+     * Deletes an employee by their UUID.
+     * 
+     * @param id The employee UUID to delete
+     * @throws ResourceNotFoundException if the employee does not exist
+     */
     public void deleteById(UUID id) {
         log.debug("Deleting Employee id={}", id);
 
